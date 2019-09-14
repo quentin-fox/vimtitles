@@ -106,7 +106,7 @@ class VimtitlesPlugin(object):
             ts_a, _, ts_b = buffer[ts_line].split(' ')
             self.ts_a = ts_a.replace(',', '.')
             self.ts_b = ts_b.replace(',', '.')
-            self.player.loop(ts_a, ts_b)
+            self.player.loop(self.ts_a, self.ts_b)
 
     @pynvim.command('PlayerStopLoop')
     def player_stop_loop(self):
