@@ -205,8 +205,8 @@ class Player:
 
     def loop(self, a, b):
         """loops between two timestamps, where timestamps are in the 00:00:00.000 format"""
-        loop_a = {"command": ["ab-loop-a", a]}
-        loop_b = {"command": ["ab-loop-b", b]}
+        loop_a = {"command": ["set_property", "ab-loop-a", a]}
+        loop_b = {"command": ["set_property", "ab-loop-b", b]}
         self.send_command(loop_a)
         self.send_command(loop_b)
 
