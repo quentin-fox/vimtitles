@@ -21,7 +21,7 @@ class VimtitlesPlugin(object):
     def player_quit(self):
         self.player.quit()
 
-    @pynvim.command('PlayerPause')
+    @pynvim.command('PlayerCyclePause')
     def player_pause(self):
         self.player.cycle_pause()
 
@@ -50,23 +50,26 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('PlayerSeekForward')
     def player_seek_forward(self):
-        seconds = self.nvim.eval('g:global_var')
-        if not seconds:
+        try:
+            seconds = self.nvim.eval('g:vimtitles_skip_amount')
+        except NameError:
             seconds = 5  # default time to skip if not set in init.vim
         self.player.seek(seconds)
 
     @pynvim.command('PlayerSeekBackward')
     def player_seek_backward(self):
-        seconds = self.nvim.eval('g:global_var') * -1
-        if not seconds:
+        try:
+            seconds = self.nvim.eval('g:vimtitles_skip_amount') * -1
+        except NameError:
             seconds = -5  # default time to skip if not set in init.vim
         self.player.seek(seconds)
 
     @pynvim.command('PlayerSeekByTimestamp')
     def player_seek_by_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
+        buffer = self.nvim.current.buffer
         ts_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d', 'bnc')
-        first_ts = ts_line.split(' ')[0]  # will work even if no spaces in line
+        first_ts = buffer[ts_line].split(' ')[0]  # will work even if no spaces in line
         time_float = convert_time(first_ts)
         self.player.seek_abs(time_float)
 

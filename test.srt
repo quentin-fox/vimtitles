@@ -13,3 +13,8 @@ here is the text that goes here for this subtitle. 2
 here is the ubtitle for this right now
 and another line in the timestamp for good measure
 
+00:00:06,200 --> 00:00:10,283
+here is the subtitle that I'm trying to type
+
+00:00:14,316 --> 00:00:14,316
+writing
