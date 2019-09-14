@@ -3,6 +3,7 @@ import pathlib
 import datetime
 import subprocess
 import json
+import time
 
 
 @pynvim.plugin
@@ -16,7 +17,22 @@ class VimtitlesPlugin(object):
         buffer = self.nvim.current.buffer
         ts = self.nvim.funcs.searchpos('00:00', 'bn')
         ln = ts[0] - 1
-        print(buffer[ln])
+        buffer[2] = buffer[ln]
+
+    @pynvim.command('PlayerOpen', nargs=1, complete="file")
+    def playeropen(self, args):
+        out = json.dumps(args)
+        self.nvim.current.buffer[1] = out
+        # self.player = Player(args)
+        # self.player.play(geometry="50%x50%")
+
+    @pynvim.command('PlayerQuit')
+    def playerquit(self):
+        self.player.quit()
+
+    @pynvim.command('PlayerPause')
+    def playerpause(self):
+        self.player.cycle_pause()
 
 
 class Player:
@@ -46,6 +62,8 @@ class Player:
                    '--really-quiet',  # prevents text being sent via stdout
                    '--geometry=' + geometry)  # geometry can be 50%x50%, for example
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=open('stdout.txt', 'w'))
+        time.sleep(1)
+        self.pause()
 
     def cycle_pause(self):
         """cycles between play and pause"""
