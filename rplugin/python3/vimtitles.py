@@ -100,7 +100,7 @@ class VimtitlesPlugin(object):
     def remove_sub_numbers(self):
         buffer = self.nvim.current.buffer
         subnums = [bool(re.match('^\\d+$', x)) for x in buffer]
-        subindex = [i + 1 for i, x in enumerate(subnums) if x]
+        subindex = [i for i, x in enumerate(subnums) if x]
         subindex.reverse()
         for i in subindex:
             del buffer[i]
@@ -131,7 +131,8 @@ class Player:
                    self.file,
                    '--input-ipc-server=/tmp/mpvsocket',
                    '--really-quiet',  # prevents text being sent via stdout
-                   '--geometry=' + geometry)  # geometry can be 50%x50%, for example
+                   '--geometry=' + geometry,  # geometry can be 50%x50%, for example
+                   '--sub-auto', 'fuzzy')
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=open('stdout.txt', 'w'))
         time.sleep(1)
         self.cycle_pause()
