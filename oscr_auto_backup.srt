@@ -1,31 +1,33 @@
 1
-here is the text that goes here for this subtitle.
-
 00:00:00,000 --> 00:00:00,000
 new subtitle
 
 2
-here is the text that goes here for this subtitle. 2
-
 00:00:21,416 --> 00:00:21,416
 here is the ubtitle for this right now
 and another line in the timestamp for good measure
 
+3
 00:00:06,200 --> 00:00:10,283
 here is the subtitle that I'm trying to type
 
+4
 00:00:14,316 --> 00:00:14,316
 writing
 
+5
 00:00:08,183 --> 00:00:10,450
 writing a new subtitle is really easy holy shit
 this shit is dope as fuck
 
+6
 00:00:11,583 --> 00:00:12,516
 this is honestly the coolest thing I might have ever done
 
+7
 00:00:18,400 --> 00:00:19,583
 what the actual fuck?
 
+8
 00:00:24,083 --> 00:00:24,083
 this shit is dope as fuck
