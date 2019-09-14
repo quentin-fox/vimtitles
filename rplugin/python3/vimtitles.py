@@ -15,8 +15,7 @@ class VimtitlesPlugin(object):
     @pynvim.command('PrevTime')
     def prevtime(self):
         buffer = self.nvim.current.buffer
-        ts = self.nvim.funcs.searchpos('00:00', 'bn')
-        ln = ts[0] - 1
+        ln = self.get_line('00:00', 'bn')
         buffer[2] = buffer[ln]
 
     @pynvim.command('PlayerOpen', nargs=1, complete="file")
@@ -32,6 +31,19 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerPause')
     def playerpause(self):
         self.player.cycle_pause()
+
+    @pynvim.command('SetTimestamp')
+    def set_timestamp(self):
+        time = self.player.get_time()
+        buffer = self.nvim.current.buffer
+        ln = self.get_line('^\\s*$', 'bn')
+        time_srt = convert_time(time)
+        buffer[ln] = time_srt
+
+
+    def get_line(self, pattern, flags):
+        row, col = self.nvim.funcs.searchpos(pattern, flags)
+        return(row - 1)
 
 
 class Player:
