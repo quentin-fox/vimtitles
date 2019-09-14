@@ -16,6 +16,6 @@ highlight link subtitleArrow Special
 highlight link subtitleNumber Special
 highlight link subtitleTimestamp Special
 highlight link subtitleComment Special
-highlight link subtitleError Special
+highlight link subtitleError Error
 
 let b:current_syntax = 'subtitle'
