@@ -11,16 +11,21 @@ class VimtitlesPlugin(object):
 
     def __init__(self, nvim):
         self.nvim = nvim
+        self.running = False
 
     @pynvim.command('PlayerOpen', nargs=1, complete="file")
     def player_open(self, args):
-        filename = args[0]
-        self.player = Player(filename)
-        self.player.play(geometry="50%x50%")
+        if not self.running:
+            filename = args[0]
+            self.player = Player(filename)
+            self.player.play(geometry="50%x50%")
+            self.running = True
 
     @pynvim.command('PlayerQuit')
     def player_quit(self):
-        self.player.quit()
+        if self.running:
+            self.player.quit()
+            self.running = False
 
     @pynvim.command('PlayerCyclePause')
     def player_pause(self):
@@ -116,7 +121,6 @@ class VimtitlesPlugin(object):
         else:
             return("No loop found")
 
-
     @pynvim.command('RemoveSubNumbers')
     def remove_sub_numbers(self):
         buffer = self.nvim.current.buffer
@@ -125,7 +129,6 @@ class VimtitlesPlugin(object):
         subindex.reverse()
         for i in subindex:
             del buffer[i]
-
 
     @pynvim.command('AddSubNumbers')
     def add_sub_numbers(self):
@@ -146,7 +149,6 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerReloadSubs')
     def player_reload_subs(self):
         self.player.send_command('sub-reload')
-
 
 
 class Player:
@@ -212,7 +214,6 @@ class Player:
 
     def stop_loop(self):
         self.send_command('ab-loop')
-
 
     def quit(self):
         """exits the mpv player"""
