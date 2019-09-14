@@ -13,9 +13,9 @@ syntax match subtitleComment '#.*'
 syntax match subtitleError '\d\d:\d\d:\d\d\.\d\d\d'
 
 highlight link subtitleArrow Special
-highlight link subtitleNumber Constant
-highlight link subtitleTimestamp Statement
-highlight link subtitleComment Comment
-highlight link subtitleError Error
+highlight link subtitleNumber Special
+highlight link subtitleTimestamp Special
+highlight link subtitleComment Special
+highlight link subtitleError Special
 
 let b:current_syntax = 'subtitle'
