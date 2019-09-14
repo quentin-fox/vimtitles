@@ -21,7 +21,8 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('PlayerOpen', nargs=1, complete="file")
     def playeropen(self, args):
-        self.player = Player(args)
+        filename = args[0]
+        self.player = Player(filename)
         self.player.play(geometry="50%x50%")
 
     @pynvim.command('PlayerQuit')
