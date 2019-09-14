@@ -95,6 +95,27 @@ class VimtitlesPlugin(object):
         finally:
             self.player.seek_abs(time_float)
 
+    @pynvim.command('PlayerLoop')
+    def player_loop(self):
+        buffer = self.nvim.current.buffer
+        ts_line = self.get_line('-->', 'bnc')
+        blank_line = self.get_line('^\\s*$', 'bn')
+        if blank_line > ts_line:
+            return
+        elif ts_line > blank_line:
+            ts_a, _, ts_b = buffer[ts_line].split(' ')
+            self.ts_a = ts_a.replace(',', '.')
+            self.ts_b = ts_b.replace(',', '.')
+            self.player.loop(ts_a, ts_b)
+
+    @pynvim.command('PlayerStopLoop')
+    def player_stop_loop(self):
+        if self.ts_a and self.ts_b:
+            self.player.stop_loop()
+            self.ts_a = self.ts_b = None
+        else:
+            return("No loop found")
+
 
     @pynvim.command('RemoveSubNumbers')
     def remove_sub_numbers(self):
@@ -109,7 +130,7 @@ class VimtitlesPlugin(object):
     @pynvim.command('AddSubNumbers')
     def add_sub_numbers(self):
         buffer = self.nvim.current.buffer
-        blank_lines = [bool(re.match('^\s*$', x)) for x in buffer]
+        blank_lines = [bool(re.match('^\\s*$', x)) for x in buffer]
         arrow_lines = ['-->' in x for x in buffer]
         # compensates for the missing blank line at the top
         blank_lines[0:0] = [True]
@@ -121,7 +142,6 @@ class VimtitlesPlugin(object):
         sub_rep.reverse()
         for i, x in sub_rep:
             buffer[x:x] = [str(i)]
-
 
     @pynvim.command('PlayerReloadSubs')
     def player_reload_subs(self):
@@ -183,7 +203,19 @@ class Player:
         seek_dict_abs = {"command": ["seek", sec_str, "absolute"]}
         self.send_command(seek_dict_abs)
 
+    def loop(self, a, b):
+        """loops between two timestamps, where timestamps are in the 00:00:00.000 format"""
+        loop_a = {"command": ["ab-loop-a", a]}
+        loop_b = {"command": ["ab-loop-b", b]}
+        self.send_command(loop_a)
+        self.send_command(loop_b)
+
+    def stop_loop(self):
+        self.send_command('ab-loop')
+
+
     def quit(self):
+        """exits the mpv player"""
         self.send_command('quit')
 
 
@@ -201,6 +233,3 @@ def convert_time(input):
         td = time_struct - datetime.datetime(1900, 1, 1)
         time_float = td.total_seconds()
         return(time_float)
-
-
-
