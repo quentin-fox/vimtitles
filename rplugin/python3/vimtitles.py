@@ -52,7 +52,7 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerSeekForward')
     def player_seek_forward(self):
         try:
-            seconds = self.nvim.eval('g:vimtitles_skip_amount')
+            seconds = float(self.nvim.eval('g:vimtitles_skip_amount'))
         except NameError:
             seconds = 5  # default time to skip if not set in init.vim
         self.player.seek(seconds)
@@ -60,7 +60,7 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerSeekBackward')
     def player_seek_backward(self):
         try:
-            seconds = self.nvim.eval('g:vimtitles_skip_amount') * -1
+            seconds = float(self.nvim.eval('g:vimtitles_skip_amount')) * -1
         except NameError:
             seconds = -5  # default time to skip if not set in init.vim
         self.player.seek(seconds)

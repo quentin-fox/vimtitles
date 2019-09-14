@@ -1,13 +1,17 @@
+1
 00:00:00,000 --> 00:00:00,000
 new subtitle
 
+2
 00:00:05,750 --> 00:00:08,833
 here is the ubtitle for this right now
 and another line in the timestamp for good measure
 
+3
 00:00:08,900 --> 00:00:10,283
 here is the subtitle that I'm trying to type
 
+4
 00:00:14,316 --> 00:00:16,316
 writing
 
