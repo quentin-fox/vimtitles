@@ -9,8 +9,7 @@ new subtitle
 00:00:07,250 --> 00:00:10,250
 here is the text that goes here for this subtitle. 2
 
-0:00:00.433
-0:00:20.483
-
-
+00:00:21,416 --> 00:00:21,416
+here is the ubtitle for this right now
+and another line in the timestamp for good measure
 
