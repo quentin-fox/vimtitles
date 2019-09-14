@@ -36,10 +36,19 @@ class VimtitlesPlugin(object):
     def set_timestamp(self):
         time = self.player.get_time()
         buffer = self.nvim.current.buffer
-        ln = self.get_line('^\\s*$', 'bn')
-        time_srt = convert_time(time)
-        buffer[ln] = time_srt
-
+        # c flag will also accept the current cursor
+        blank_line = self.get_line('^\\s*$', 'bnc')
+        timestamp_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d$', 'bnc')
+        if blank_line > timestamp_line:
+            time_srt = convert_time(time)
+            buffer[blank_line] = time_srt
+        elif timestamp_line > blank_line:
+            # abort if there's a second timestamp
+            old_time = buffer[timestamp_line]
+            old_time = old_time.rstrip()
+            time_srt = convert_time(time)
+            full_time = old_time + " --> " + time_srt
+            buffer[timestamp_line] = full_time
 
     def get_line(self, pattern, flags):
         row, col = self.nvim.funcs.searchpos(pattern, flags)
@@ -107,8 +116,9 @@ def convert_time(input):
     """method for converting .srt time strings to number of seconds"""
     if isinstance(input, float):
         time = str(datetime.timedelta(seconds=input))
-        time.replace(".", ",")  # second to milisecond separator is a comma in .srt
-        time = time[:-3]
+        time = time.replace(".", ",")  # second to milisecond separator is a comma in .srt
+        time = time[:-3]  # converts from microseconds to miliseconds
+        time = time.rjust(12, '0')  # will add extra zero if hours are missing them
         return(time)
     elif isinstance(input, str):
         time = input
