@@ -21,10 +21,8 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('PlayerOpen', nargs=1, complete="file")
     def playeropen(self, args):
-        out = json.dumps(args)
-        self.nvim.current.buffer[1] = out
-        # self.player = Player(args)
-        # self.player.play(geometry="50%x50%")
+        self.player = Player(args)
+        self.player.play(geometry="50%x50%")
 
     @pynvim.command('PlayerQuit')
     def playerquit(self):
