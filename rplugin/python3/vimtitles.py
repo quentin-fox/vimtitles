@@ -105,6 +105,10 @@ class VimtitlesPlugin(object):
         for i in subindex:
             del buffer[i]
 
+    @pynvim.command('PlayerReloadSubs')
+    def player_reload_subs(self):
+        self.player.send_command('sub-reload')
+
 
 class Player:
     """class for the mpv player, has controls and can get info about the player"""
