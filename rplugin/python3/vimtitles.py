@@ -156,7 +156,7 @@ class Player:
                    '--really-quiet',  # prevents text being sent via stdout
                    '--geometry=' + geometry,  # geometry can be 50%x50%, for example
                    '--sub-auto=fuzzy')
-        subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=open('stdout.txt', 'w'))
+        subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
         time.sleep(1)
         self.cycle_pause()
 
