@@ -3,6 +3,7 @@ import datetime
 import subprocess
 import json
 import time
+import re
 
 
 @pynvim.plugin
@@ -93,6 +94,16 @@ class VimtitlesPlugin(object):
             time_float = self.player.get_time()
         finally:
             self.player.seek_abs(time_float)
+
+
+    @pynvim.command('RemoveSubNumbers')
+    def remove_sub_numbers(self):
+        buffer = self.nvim.current.buffer
+        subnums = [bool(re.match('^\\d+$', x)) for x in buffer]
+        subindex = [i + 1 for i, x in enumerate(subnums) if x].reverse
+        subindex.reverse()
+        for i in subindex:
+            del buffer[i]
 
 
 class Player:
