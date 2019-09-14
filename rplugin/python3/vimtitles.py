@@ -105,9 +105,25 @@ class VimtitlesPlugin(object):
         for i in subindex:
             del buffer[i]
 
+
+    @pynvim.command('AddSubNumbers')
+    def add_sub_numbers(self):
+        buffer = self.nvim.current.buffer
+        blank_lines = [bool(re.match('^\s*$', x)) for x in buffer]
+        arrow_lines = ['-->' in x for x in buffer]
+        arrow_lines_rot = arrow_lines[1:] + arrow_lines[:1]  # rotate so matches blank_lines
+        sub_lines = [b & a for b, a in zip(blank_lines, arrow_lines_rot)]
+        subindex = [i for i, x in enumerate(sub_lines) if x]
+        sub_rep = [(i + 1, x) for i, x in enumerate(subindex)]
+        sub_rep.reverse()
+        for i, x in sub_rep:
+            buffer[x:x] = [str(i)]
+
+
     @pynvim.command('PlayerReloadSubs')
     def player_reload_subs(self):
         self.player.send_command('sub-reload')
+
 
 
 class Player:
