@@ -16,7 +16,7 @@ class VimtitlesPlugin(object):
         buffer = self.nvim.current.buffer
         ts = self.nvim.funcs.searchpos('00:00', 'bn')
         ln = ts[0] - 1
-        buffer[1] = buffer[ln]
+        print(buffer[ln])
 
 
 class Player:
