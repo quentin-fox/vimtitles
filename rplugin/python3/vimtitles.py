@@ -100,7 +100,7 @@ class VimtitlesPlugin(object):
     def remove_sub_numbers(self):
         buffer = self.nvim.current.buffer
         subnums = [bool(re.match('^\\d+$', x)) for x in buffer]
-        subindex = [i + 1 for i, x in enumerate(subnums) if x].reverse
+        subindex = [i + 1 for i, x in enumerate(subnums) if x]
         subindex.reverse()
         for i in subindex:
             del buffer[i]
