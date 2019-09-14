@@ -111,6 +111,9 @@ class VimtitlesPlugin(object):
         buffer = self.nvim.current.buffer
         blank_lines = [bool(re.match('^\s*$', x)) for x in buffer]
         arrow_lines = ['-->' in x for x in buffer]
+        # compensates for the missing blank line at the top
+        blank_lines[0:0] = [True]
+        arrow_lines[0:0] = [False]
         arrow_lines_rot = arrow_lines[1:] + arrow_lines[:1]  # rotate so matches blank_lines
         sub_lines = [b & a for b, a in zip(blank_lines, arrow_lines_rot)]
         subindex = [i for i, x in enumerate(sub_lines) if x]
