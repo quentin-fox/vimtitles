@@ -62,7 +62,7 @@ class Player:
                    '--geometry=' + geometry)  # geometry can be 50%x50%, for example
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=open('stdout.txt', 'w'))
         time.sleep(1)
-        self.pause()
+        self.cycle_pause()
 
     def cycle_pause(self):
         """cycles between play and pause"""
