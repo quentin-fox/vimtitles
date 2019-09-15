@@ -12,7 +12,7 @@ class VimtitlesPlugin(object):
         self.nvim = nvim
         self.running = False
 
-    @pynvim.command('PlayerOpen', nargs=2, complete="file")
+    @pynvim.command('PlayerOpen', nargs='+', complete="file")  # must have at least one arg
     def player_open(self, args):
         if not self.running:
             filename, *sets = args[0]
