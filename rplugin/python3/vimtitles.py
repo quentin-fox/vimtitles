@@ -167,6 +167,22 @@ class VimtitlesPlugin(object):
     def player_reload_subs(self):
         self.player.send_command('sub-reload')
 
+    @pynvim.command('FindCurrentSub')
+    def find_current_sub(self):
+        buffer = self.nvim.current.buffer
+        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d$'
+
+        def parse_ts(ts):
+            ts1 = ts.split(' ')[0]
+            ts_float = convert_time(ts1)
+            return(ts_float)
+
+        ts_list = [(i, parse_ts(x)) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
+        current_time = self.player.get_time()
+        cursor_pos = [(i + 1, 1) for i, x in ts_list if x >= current_time][0]
+        window = self.nvim.current.window
+        window.cursor = (cursor_pos)
+
 
 class Player:
     """class for the mpv player, has controls and can get info about the player"""
