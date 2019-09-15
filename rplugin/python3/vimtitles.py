@@ -12,7 +12,16 @@ class VimtitlesPlugin(object):
         self.nvim = nvim
         self.running = False
 
-    @pynvim.command('PlayerOpen', nargs=1, complete="file")
+    @pynvim.command('TestFunc', nargs='+', complete='file')
+    def test_func(self, args):
+        out = json.dumps(args)
+        filename, *newargs = args
+        newargs_out = json.dumps(newargs)
+        buffer = self.nvim.current.buffer
+        buffer[1] = out
+        buffer[2] = newargs_out
+
+    @pynvim.command('PlayerOpen', nargs=1, complete='file')
     def player_open(self, args):
         if not self.running:
             filename = args[0]
