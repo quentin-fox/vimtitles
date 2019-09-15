@@ -13,7 +13,7 @@ syntax match subtitleComment '#.*'
 syntax match subtitleError '\d\d:\d\d:\d\d\.\d\d\d'
 
 highlight link subtitleArrow Special
-highlight link subtitleNumber Special
+highlight link subtitleNumber Structure
 highlight link subtitleTimestamp Special
 highlight link subtitleComment Special
 highlight link subtitleError Error
