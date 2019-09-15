@@ -2,7 +2,6 @@ import pynvim
 import datetime
 import subprocess
 import json
-import time
 import re
 
 
@@ -13,12 +12,20 @@ class VimtitlesPlugin(object):
         self.nvim = nvim
         self.running = False
 
-    @pynvim.command('PlayerOpen', nargs=1, complete="file")
+    @pynvim.command('PlayerOpen', nargs=2, complete="file")
     def player_open(self, args):
         if not self.running:
-            filename = args[0]
+            filename, *sets = args[0]
+            try:
+                timestart = sets[0]
+            except IndexError:
+                timestart = '0:00'
+            try:
+                geometry = sets[1]
+            except IndexError:
+                geometry = '50%x50%'
             self.player = Player(filename)
-            self.player.play(geometry="50%x50%")
+            self.player.play(geometry=geometry, timestart=timestart)
             self.running = True
 
     @pynvim.command('PlayerQuit')
@@ -170,17 +177,17 @@ class Player:
         ps.wait()
         return(output)
 
-    def play(self, geometry):
+    def play(self, geometry='50%x50%', timestart='0:00'):
         """initiates the player the file, depending on the filetype"""
         mpvargs = ('mpv',
                    self.file,
                    '--input-ipc-server=/tmp/mpvsocket',
                    '--really-quiet',  # prevents text being sent via stdout
                    '--geometry=' + geometry,  # geometry can be 50%x50%, for example
-                   '--sub-auto=fuzzy')
+                   '--sub-auto=fuzzy',
+                   '--start=' + timestart,
+                   '--pause')  # starts the video paused
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
-        time.sleep(1)
-        self.cycle_pause()
 
     def cycle_pause(self):
         """cycles between play and pause"""
