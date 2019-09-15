@@ -12,10 +12,10 @@ class VimtitlesPlugin(object):
         self.nvim = nvim
         self.running = False
 
-    @pynvim.command('PlayerOpen', nargs='+', complete="file")  # must have at least one arg
+    @pynvim.command('PlayerOpen', nargs=1, complete="file")  # must have at least one arg
     def player_open(self, args):
         if not self.running:
-            filename, *sets = args[0]
+            filename, *sets = args
             try:
                 timestart = sets[0]
             except IndexError:
