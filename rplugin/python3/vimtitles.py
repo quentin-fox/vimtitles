@@ -21,11 +21,20 @@ class VimtitlesPlugin(object):
         buffer[1] = out
         buffer[2] = newargs_out
 
-    @pynvim.command('PlayerOpen', nargs=1, complete='file')
+    @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
         if not self.running:
             filename = args[0]
-            self.player = Player(filename)
+            try:
+                timestart = args[1]
+
+            except IndexError:
+                timestart = '0:00'
+            try:
+                geometry = args[2]
+            except IndexError:
+                geometry = '50%x50%'
+            self.player = Player(filename, timestart=timestart, geometry=geometry)
             self.player.play()
             self.running = True
 
