@@ -34,8 +34,8 @@ class VimtitlesPlugin(object):
                 geometry = args[2]
             except IndexError:
                 geometry = '50%x50%'
-            self.player = Player(filename, timestart=timestart, geometry=geometry)
-            self.player.play()
+            self.player = Player(filename)
+            self.player.play(timestart=timestart, geometry=geometry)
             self.running = True
 
     @pynvim.command('PlayerQuit')
