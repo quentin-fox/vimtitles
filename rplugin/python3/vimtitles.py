@@ -12,20 +12,12 @@ class VimtitlesPlugin(object):
         self.nvim = nvim
         self.running = False
 
-    @pynvim.command('PlayerOpen', nargs=1, complete="file")  # must have at least one arg
+    @pynvim.command('PlayerOpen', nargs=1, complete="file")
     def player_open(self, args):
         if not self.running:
-            filename, *sets = args
-            try:
-                timestart = sets[0]
-            except IndexError:
-                timestart = '0:00'
-            try:
-                geometry = sets[1]
-            except IndexError:
-                geometry = '50%x50%'
+            filename = args[0]
             self.player = Player(filename)
-            self.player.play(geometry=geometry, timestart=timestart)
+            self.player.play()
             self.running = True
 
     @pynvim.command('PlayerQuit')
