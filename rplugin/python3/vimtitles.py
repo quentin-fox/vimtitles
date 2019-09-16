@@ -187,13 +187,12 @@ class VimtitlesPlugin(object):
         for i, ts1, ts2 in ts_shift:
             buffer[i] = ts1 + ' --> ' + ts2
 
-
-    def parse_ts(ts):
+    def parse_ts(self, ts):
         ts1 = ts.split(' ')[0]
         ts_float = convert_time(ts1)
         return(ts_float)
 
-    def shift_ts(ts, shift):
+    def shift_ts(self, ts, shift):
         ts_float = convert_time(ts)
         new_ts = ts_float + shift
         if new_ts <= 0:
