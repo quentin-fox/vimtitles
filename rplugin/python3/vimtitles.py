@@ -171,17 +171,36 @@ class VimtitlesPlugin(object):
     def find_current_sub(self):
         buffer = self.nvim.current.buffer
         tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
-
-        def parse_ts(ts):
-            ts1 = ts.split(' ')[0]
-            ts_float = convert_time(ts1)
-            return(ts_float)
-
-        ts_list = [(i, parse_ts(x)) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
+        ts_list = [(i, self.parse_ts(x)) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
         current_time = self.player.get_time()
         cursor_pos = [(i + 2, 0) for i, x in ts_list if x <= current_time][-1]
         window = self.nvim.current.window
         window.cursor = (cursor_pos)
+
+    @pynvim.command('ShiftSubs', nargs=1)
+    def shift_subs(self, args):
+        shift = float(args[0])
+        buffer = self.nvim.current.buffer
+        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
+        ts_list = [(i, x.split(' ')[0], x.split(' ')[2]) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
+        ts_shift = [(i, self.shift_ts(x, shift), self.shift_ts(y, shift)) for i, x, y in ts_list]
+        for i, ts1, ts2 in ts_shift:
+            buffer[i] = ts1 + ' --> ' + ts2
+
+
+    def parse_ts(ts):
+        ts1 = ts.split(' ')[0]
+        ts_float = convert_time(ts1)
+        return(ts_float)
+
+    def shift_ts(ts, shift):
+        ts_float = convert_time(ts)
+        new_ts = ts_float + shift
+        if new_ts <= 0:
+            return('00:00:00,000')
+        else:
+            new_ts_str = convert_time(float(new_ts))
+            return(new_ts_str)
 
 
 class Player:
@@ -255,15 +274,32 @@ class Player:
 
 def convert_time(input):
     """method for converting .srt time strings to number of seconds"""
-    if isinstance(input, float):
-        time = str(datetime.timedelta(seconds=input))
-        time = time.replace(".", ",")  # second to milisecond separator is a comma in .srt
-        time = time[:-3]  # converts from microseconds to miliseconds
-        time = time.rjust(12, '0')  # will add extra zero if hours are missing them
-        return(time)
+    if isinstance(input, float) or isinstance(input, int):
+        if input == 0:
+            return('00:00:00,000')
+        else:
+            time = str(datetime.timedelta(seconds=input))
+            time = time.replace(".", ",")  # second to milisecond separator is a comma in .srt
+            if len(time) in (6, 7):
+                time = time + ',000000'  # sometimes the microseconds are not added
+            time = time[:-3]  # converts from microseconds to miliseconds
+            time = time.rjust(12, '0')  # will add extra zero if hours are missing them
+            return(time)
     elif isinstance(input, str):
         time = input
-        time_struct = datetime.datetime.strptime(input, "%H:%M:%S,%f")
-        td = time_struct - datetime.datetime(1900, 1, 1)
-        time_float = td.total_seconds()
-        return(time_float)
+        if time == '00:00:00,000':
+            return(float(0))
+        else:
+            time_struct = datetime.datetime.strptime(input, "%H:%M:%S,%f")
+            td = time_struct - datetime.datetime(1900, 1, 1)
+            time_float = float(td.total_seconds())
+            return(time_float)
+
+
+ts_float = convert_time(ts)
+new_ts = ts_float + shift
+if new_ts <= 0:
+    print('00:00:00,000')
+else:
+    new_ts_str = convert_time(float(new_ts))
+    print(new_ts_str)
