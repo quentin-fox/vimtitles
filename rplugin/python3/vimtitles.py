@@ -295,11 +295,3 @@ def convert_time(input):
             time_float = float(td.total_seconds())
             return(time_float)
 
-
-ts_float = convert_time(ts)
-new_ts = ts_float + shift
-if new_ts <= 0:
-    print('00:00:00,000')
-else:
-    new_ts_str = convert_time(float(new_ts))
-    print(new_ts_str)
