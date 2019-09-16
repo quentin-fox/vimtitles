@@ -170,7 +170,7 @@ class VimtitlesPlugin(object):
     @pynvim.command('FindCurrentSub')
     def find_current_sub(self):
         buffer = self.nvim.current.buffer
-        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d$'
+        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
 
         def parse_ts(ts):
             ts1 = ts.split(' ')[0]
@@ -179,7 +179,7 @@ class VimtitlesPlugin(object):
 
         ts_list = [(i, parse_ts(x)) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
         current_time = self.player.get_time()
-        cursor_pos = [(i + 2, 0) for i, x in ts_list if x >= current_time][0]
+        cursor_pos = [(i + 2, 0) for i, x in ts_list if x <= current_time][-1]
         window = self.nvim.current.window
         window.cursor = (cursor_pos)
 
