@@ -179,7 +179,7 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('ShiftSubs', nargs=1)
     def shift_subs(self, args):
-        shift = 5
+        shift = float(args[0])
         buffer = self.nvim.current.buffer
         tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
         ts_list = [(i, x.split(' ')[0], x.split(' ')[2]) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
