@@ -7,5 +7,6 @@ if !get(g:, 'vimtitles_no_default_key_mappings', 0)
 	nnoremap <silent> <Bar> :execute "SetTimestamp"<Cr>
 	nnoremap <silent> _ :execute "PlayerSeekByTimestamp"<Cr>
 	nnoremap <silent> ;rs :execute "w <Bar> PlayerReloadSubs"<Cr>
+	nnoremap <silent> + :execute "FindCurrentSub"<Cr>
 endif
 

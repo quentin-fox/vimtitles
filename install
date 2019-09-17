@@ -1,0 +1,11 @@
+#!/bin/bash
+
+if command -v mpv >/dev/null 2>&1; then
+	echo 'mpv installed on system'
+else
+	echo 'please install mpv to use vimtitles'
+fi
+
+pip3 install pynvim --quiet
+
+nvim +UpdateRemotePlugins +qall

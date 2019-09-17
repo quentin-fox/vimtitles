@@ -1,0 +1,20 @@
+*vimtitles.txt* Functionality for writing subtitle files in the .srt format
+
+        _             _    _  _    _             ~
+__   __(_) _ __ ___  | |_ (_)| |_ | |  ___  ___  ~
+\ \ / /| || '_ ` _ \ | __|| || __|| | / _ \/ __| ~
+ \ V / | || | | | | || |_ | || |_ | ||  __/\__ \ ~
+  \_/  |_||_| |_| |_| \__||_| \__||_| \___||___/ ~
+
+=======================================================================
+CONTENTS                                            *vimtitles*
+
+    1. Usage ................ |VimtitlesUsage|
+    2. Mappings ............. |VimtitlesMappings|
+    4. Bugs ................. |VimtitlesBugs|
+    7. Credits .............. |VimtitlesCredits|
+
+
+=======================================================================
+Section 1: Usage				       *VimtitlesUsage*
+

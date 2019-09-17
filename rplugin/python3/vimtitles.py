@@ -261,6 +261,7 @@ class Player:
         loop_a = {"command": ["set_property", "ab-loop-a", a]}
         loop_b = {"command": ["set_property", "ab-loop-b", b]}
         self.send_command(loop_a)
+        timestamps = []
         self.send_command(loop_b)
 
     def stop_loop(self):
