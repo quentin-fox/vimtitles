@@ -100,7 +100,9 @@ class VimtitlesPlugin(object):
     def player_seek_by_stop_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
-        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
+        # note that the '?' has to be escaped when sending regex to vim
+        # doesn't have to be escaped in python, though
+        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s\\?$'
         ts_line = self.get_line(tsformat, 'bnc')
         stop_ts = buffer[ts_line].split(' ')[2]  # will work even if no spaces in line
         time_float = convert_time(stop_ts)
