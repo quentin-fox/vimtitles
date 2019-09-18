@@ -87,13 +87,23 @@ class VimtitlesPlugin(object):
             seconds = -5  # default time to skip if not set in init.vim
         self.player.seek(seconds)
 
-    @pynvim.command('PlayerSeekByTimestamp')
-    def player_seek_by_ts(self):
+    @pynvim.command('PlayerSeekByStartTimestamp')
+    def player_seek_by_start_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
         ts_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d', 'bnc')
-        first_ts = buffer[ts_line].split(' ')[0]  # will work even if no spaces in line
-        time_float = convert_time(first_ts)
+        start_ts = buffer[ts_line].split(' ')[0]  # will work even if no spaces in line
+        time_float = convert_time(start_ts)
+        self.player.seek_abs(time_float)
+
+    @pynvim.command('PlayerSeekByStopTimestamp')
+    def player_seek_by_stop_ts(self):
+        """will seek to the timestamp at the beginning of the most recent line"""
+        buffer = self.nvim.current.buffer
+        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
+        ts_line = self.get_line(tsformat, 'bnc')
+        stop_ts = buffer[ts_line].split(' ')[2]  # will work even if no spaces in line
+        time_float = convert_time(stop_ts)
         self.player.seek_abs(time_float)
 
     @pynvim.command('PlayerSeekAbs', nargs=1)
@@ -187,6 +197,22 @@ class VimtitlesPlugin(object):
         for i, ts1, ts2 in ts_shift:
             buffer[i] = ts1 + ' --> ' + ts2
 
+    @pynvim.command('PlayerIncSpeed')
+    def player_inc_speed(self):
+        try:
+            multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
+            self.player.inc_speed(multiplier)
+        except pynvim.api.nvim.NvimError:
+            self.player.inc_speed()
+
+    @pynvim.command('PlayerDecSpeed')
+    def player_dec_speed(self):
+        try:
+            multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
+            self.player.dec_speed(multiplier)
+        except pynvim.api.nvim.NvimError:
+            self.player.dec_speed()
+
     def parse_ts(self, ts):
         ts1 = ts.split(' ')[0]
         ts_float = convert_time(ts1)
@@ -266,6 +292,14 @@ class Player:
 
     def stop_loop(self):
         self.send_command('ab-loop')
+
+    def inc_speed(self, multiplier=1.1):
+        cmd = {"command": ["multiply", "speed", multiplier]}
+        self.send_command(cmd)
+
+    def dec_speed(self, multiplier=1.1):
+        cmd = {"command": ["multiply", "speed", 1 / multiplier]}
+        self.send_command(cmd)
 
     def quit(self):
         """exits the mpv player"""
