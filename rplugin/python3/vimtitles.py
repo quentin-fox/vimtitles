@@ -262,7 +262,8 @@ class Player:
                    self.file,
                    '--input-ipc-server=/tmp/mpvsocket',
                    '--really-quiet',  # prevents text being sent via stdout
-                   '--sub-auto=fuzzy',
+                   '--keep-open=always'  # don't quit mpv after file has finished
+                   '--sub-auto=fuzzy',  # subs loaded if they fuzzy match the av filename
                    '--start=' + timestart,
                    '--pause')  # starts the video paused
         if av == "v":
@@ -297,7 +298,6 @@ class Player:
         loop_a = {"command": ["set_property", "ab-loop-a", a]}
         loop_b = {"command": ["set_property", "ab-loop-b", b]}
         self.send_command(loop_a)
-        timestamps = []
         self.send_command(loop_b)
 
     def stop_loop(self):
