@@ -3,6 +3,7 @@ import datetime
 import subprocess
 import json
 import re
+import mimetypes
 
 
 @pynvim.plugin
@@ -21,22 +22,28 @@ class VimtitlesPlugin(object):
         buffer[1] = out
         buffer[2] = newargs_out
 
+    def parse_filetype(self, filename):
+        mime_guess = mimetypes.guess_type(filename)[0]
+        if mime_guess is None:
+            raise Exception(f'{filename} is not a known audio or video type')
+            return
+        if "audio" in mime_guess:
+            return("a")
+        elif "video" in mime_guess:
+            return("v")
+
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
-        if not self.running:
-            filename = args[0]
-            try:
-                timestart = args[1]
-
-            except IndexError:
-                timestart = '0:00'
-            try:
-                geometry = args[2]
-            except IndexError:
-                geometry = '50%x50%'
-            self.player = Player(filename)
-            self.player.play(timestart=timestart, geometry=geometry)
-            self.running = True
+        if self.running:
+            return
+        filename = args[0]
+        filetype = self.parse_filetype(filename)
+        timestart = args[1] if len(args) >= 2 else '0:00'
+        geometry = args[2] if len(args) >= 3 else '50%x50%'
+        self.player = Player(filename)
+        self.player = Player(filename)
+        self.player.play(av=filetype, timestart=timestart, geometry=geometry)
+        self.running = True
 
     @pynvim.command('PlayerQuit')
     def player_quit(self):
@@ -230,7 +237,6 @@ class VimtitlesPlugin(object):
             return(new_ts_str)
 
 
-
 class Player:
     """class for the mpv player, has controls and can get info about the player"""
 
@@ -250,16 +256,17 @@ class Player:
         ps.wait()
         return(output)
 
-    def play(self, geometry='50%x50%', timestart='0:00'):
+    def play(self, av="v", geometry='50%x50%', timestart='0:00'):
         """initiates the player the file, depending on the filetype"""
         mpvargs = ('mpv',
                    self.file,
                    '--input-ipc-server=/tmp/mpvsocket',
                    '--really-quiet',  # prevents text being sent via stdout
-                   '--geometry=' + geometry,  # geometry can be 50%x50%, for example
                    '--sub-auto=fuzzy',
                    '--start=' + timestart,
                    '--pause')  # starts the video paused
+        if av == "v":
+            mpvargs += ('--geometry=' + geometry)  # geometry can be 50%x50%, for example
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
 
     def cycle_pause(self):
