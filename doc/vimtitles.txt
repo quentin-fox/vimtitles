@@ -1,20 +1,246 @@
 *vimtitles.txt* Functionality for writing subtitle files in the .srt format
 
-        _             _    _  _    _             ~
-__   __(_) _ __ ___  | |_ (_)| |_ | |  ___  ___  ~
-\ \ / /| || '_ ` _ \ | __|| || __|| | / _ \/ __| ~
- \ V / | || | | | | || |_ | || |_ | ||  __/\__ \ ~
-  \_/  |_||_| |_| |_| \__||_| \__||_| \___||___/ ~
+	    	       _             _    _  _    _             ~
+	       __   __(_) _ __ ___  | |_ (_)| |_ | |  ___  ___  ~
+	       \ \ / /| || '_ ` _ \ | __|| || __|| | / _ \/ __| ~
+	        \ V / | || | | | | || |_ | || |_ | ||  __/\__ \ ~
+	    	 \_/  |_||_| |_| |_| \__||_| \__||_| \___||___/ ~
 
-=======================================================================
-CONTENTS                                            *vimtitles*
+================================================================================
+CONTENTS                                                               *vimtitles*
 
-    1. Usage ................ |VimtitlesUsage|
-    2. Mappings ............. |VimtitlesMappings|
-    4. Bugs ................. |VimtitlesBugs|
-    7. Credits .............. |VimtitlesCredits|
+    1. About ................ |VimtitlesAbout|
+    2. Installation ......... |VimtitlesInstallation|
+    3. Usage ................ |VimtitlesUsage|
+    4. Mappings ............. |VimtitlesMappings|
+    5. Configuration ........ |VimtitlesConfiguration|
+    6. References ........... |VimtitlesReferences|
 
 
-=======================================================================
-Section 1: Usage				       *VimtitlesUsage*
+================================================================================
+Section 1: About 	     	                                  *VimtitlesAbout*
 
+Vimtitles is a plugin for Neovim that can be used to facilitate writing .srt, or 
+subtitle files for both audio and video files. It is written in python, using 
+the pynvim external api. It uses mpv, a command line interface that can be used 
+to play both audio and video files. mpv allows for two-way communication with
+the python script using the JSON-based IPC protocol, so nvim can send commands
+mpv, and mpv can send information about the player's status back to nvim. 
+
+================================================================================
+Section 2: Installation 	     	                   *VimtitlesInstallation*
+
+mpv is a key dependency of vimtitles. To install it, follow the instructions on
+your platform of choice found at https://mpv.io/installation/
+
+To install the vimtitles plugin, you must be using Neovim. Follow the
+instructions for your package manager of choice:
+
+vim-plug (https://github.com/junegunn/vim-plug)
+>
+    Plug 'quentin-fox/vimtitles', { 'do': ':UpdateRemotePlugins' }
+    :PlugInstall
+<
+Vundle (https://github.com/VundleVim/Vundle.vim)
+>
+    Plugin 'quentin-fox/vimtitles'
+    :PluginInstall
+    :UpdateRemotePlugins
+<
+================================================================================
+Section 3: Usage 	     	                                  *VimtitlesUsage*
+
+Vimtitles commands and keybindings will be available in .srt files, or in files
+where you have run
+>
+    :set filetype=subtitle
+<
+
+--------------------------------------------------------------------------------
+Opening Audio/Video Files
+
+In the same directory as the audio/video file you want to subtitle, create a new
+.srt file. Once this is open, use *:PlayerOpen* along with the name of the audio
+or video file to open mpv. If you pass a video file, a mpv window will open that
+displays the video. If you pass an audio file, no mpv window will appear.
+>
+    :PlayerOpen test.mp4
+<
+You can specify the start time of the audio or video file. The options for
+this can be found here:
+
+https://mpv.io/manual/stable/#options-start
+
+To jump to 13 minutes, 45 seconds into the test.mp4:
+>
+    :PlayerOpen test.mp4 13:45
+<
+You can also specify the geometry of the mpv window. The possible geometry 
+options can be found here:
+
+https://mpv.io/manual/stable/#options-geometry
+
+You must specify a start time if you want to specify a geometry, and the start
+time must come before the geometry.
+>
+    :PlayerOpen test.mp4 0:00 30%x30%
+<
+When you are finished writing subtitles, you can run *:PlayerQuit* to stop mpv.
+
+--------------------------------------------------------------------------------
+Basic Player Control
+
+*:PlayerCyclePause* will toggle between pausing and playing the audio or video.
+*:PlayerSeekForward* and *:PlayerSeekBackward* will seek forward and backward in
+mpv by the amount of seconds set by |g:vimtitles_skip_amount|, or 5 seconds by
+default. *:PlayerSeekAbs* will let you seek to a specific timepoint in the audio
+or video, and accepts two formats: "MM:SS", or "HH:MM:SS,fff", where %f is the 
+number of miliseconds. 
+
+You can change the playback speed using *:PlayerIncSpeed* and *:PlayerDecSpeed*.
+It will increase and decrease the speed by a factor of 1.1 by default, but this
+multiplier can be set with |g:vimtitles_speed_shift_multiplier|.
+
+--------------------------------------------------------------------------------
+Inserting Subtitles
+
+The .srt format is quite strict, and is as follows:
+
+1                                   <- subtitle number
+00:00:00,000 --> 00:00:05,153       <- start and stop timestamps
+subtitle here                       <- the subtitle text
+                                    <- blank line between subtitles
+
+To read more about this format, see https://en.wikipedia.org/wiki/SubRip
+
+The command *:SetTimestamp* allows you to insert both the start and stop
+timestamps using the same command. Whenever it is called, the timestamp it inserts 
+will correspond to the current time in the audio/video in the mpv player. If your
+cursor is on a blank line, then it will insert the start timestamp, not including 
+the arrow. If your cursor is on a non-blank line (i.e. the subtitle text), it will 
+search backwards to the next blank line and insert the start timestamp. 
+
+Example 1 ("|" indicates the current cursor position)
+>
+                                          00:00:00,000
+|                          becomes        |
+^ cursor                                  ^ cursor
+
+
+Example 2:
+
+>
+                                          00:00:00,000
+subtitle text|             becomes        subtitle text|
+             ^ cursor                                  ^ cursor
+<
+
+However, if a start timestamp without a stop timestamp is found more recently
+than the blank line (i.e. occurs first in a backwards search), then the start
+timestamp will be completed with the stop timestamp. This will also occur if 
+the cursor is on the same line as the incompleted start timestamp.
+
+Example 3:
+
+00:00:00,000                              00:00:00,000 --> 00:00:05,000
+subtitle text|             becomes        subtitle text|
+             ^ cursor                                  ^ cursor
+
+Example 4:
+
+00:00:00,000|              becomes        00:00:00,000 --> 00:00:05,000
+            ^ cursor
+
+(TODO where does the cursor end up in this example?)
+
+The .srt format also requires subtitle numbers that start at 1, and increment
+by 1 for each subsequent subtitle. These can be added to the entire .srt file
+at once using the *:AddSubNumbers* command. It can be useful to work without
+the subtitle numbers if you want to remove, add, or rearrange subtitles. To do
+this, you can call *:RemoveSubNumbers* to remove the subtitle numbers
+from every subtitle. Once you have finished making your changes, calling
+*:AddSubNumbers* will add the correct sub numbers once again. You can also
+call the function *RefreshSubNumbers()* to remove, then add sub numbers.
+>
+    :call RefreshSubNumbers()
+<
+If you want to shift the timestamps of all subtitles in the .srt file, you can
+do so with the *:ShiftSubs* command. This takes one argument, which is the
+number of seconds (as a float) that the subtitles will be shifted by. Positive
+values will add seconds to the timestamp, and negative numbers will remove
+seconds to the timestamp. If subtracting seconds from a timestamp leads to a
+"negative" time, then that specific timestamp will be set to 00:00:00,000
+instead.
+
+--------------------------------------------------------------------------------
+Seeking with Subtitle Timestamps
+
+Vimtitles also has commands that let you navigate to both the specific point
+in the audio/video that corresponds to the start or stop timestamp of the
+subtitle the cursor is on. 
+
+*:PlayerSeekByStartTimestamp* will navigate to the timestamp of the start
+time of the subtitle the cursor is on. It does not require there to be a stop 
+timestamp on the same line as the start timestamp.
+
+*:PlayerSeekByStopTimestamp* will navigate to the timestamp of the stop time
+of the subtitle the cursor is on. This requires there to be a full timestamp
+on that line (e.g. 00:00:00,000 --> 00:00:05,000).
+
+You can also set the mpv player to loop between the start and stop timestamps
+of the subtitle under the cursor. Call *:PlayerLoop* to start looping between
+the start and stop timestamps, and *:PlayerStopLoop* to stop looping between
+the timestamps.
+
+Lastly, you can navigate to the last subtitle that starts before the current
+time of the audio/video file using *:FindCurrentSub* For example, if the video 
+file is currently at 50 seconds, and there are three timestamps that start at 
+40 seconds, 45 seconds, and 55 seconds, then the cursor will jump to the
+subtitle that starts at 45 seconds.
+
+================================================================================
+Section 3: Mappings                                            *VimtitlesMappings*
+
+The default mappings for this plugin are all normal mode commands:
+
+Mapping     Command
+-------     -------
+
+<Cr>        |:PlayerCyclePause|
+-           |:PlayerSeekBackward|
+=           |:PlayerSeekForward|
+[           |:PlayerDecSpeed|
+]           |:PlayerIncSpeed|
+<Bar>       |:SetTimestamp|
+_           |:PlayerSeekByStartTimestamp|
++           |:PlayerSeekByStopTimestamp|
+\\          |:FindCurrentSub|
+
+
+================================================================================
+Section 4: Configuration                                  *VimtitlesConfiguration*
+
+
+    *g:vimtitles_skip_amount*               (default = 5)
+
+The number of seconds that |:PlayerSeekBackward| and |:PlayerSeekForward| will seek
+by. 
+
+    *g:vimtitles_speed_shift_multiplier*    (default = 1.1)
+
+The float multiplier that |:PlayerDecSpeed| and |:PlayerIncSpeed| will use to
+decrease or increase the playback speed of the audio or video. 
+
+    *g:vimtitles_no_subnumbers_on_save*     (default = 1)
+
+Indicates if vimtitles should run the |RefreshSubNumbers()| command after each
+time the .srt file is saved. If it is equal to 1, then this command will not be
+run.
+
+================================================================================
+Section 6: References                                        *VimtitlesReferences*
+
+mpv documentation: https://mpv.io/manual/stable/
+mpv ipc/json: https://github.com/mpv-player/mpv/blob/master/DOCS/man/ipc.rst
+pynvim: https://pynvim.readthedocs.io/en/latest/
+srt files: https://en.wikipedia.org/wiki/SubRip

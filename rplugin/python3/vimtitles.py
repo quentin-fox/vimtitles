@@ -31,6 +31,8 @@ class VimtitlesPlugin(object):
             return("a")
         elif "video" in mime_guess:
             return("v")
+        else:
+            raise Exception(f'{mime_guess} is not a known audio or video type')
 
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
@@ -59,7 +61,7 @@ class VimtitlesPlugin(object):
     def set_timestamp(self):
         time = self.player.get_time()
         buffer = self.nvim.current.buffer
-        # c flag will also accept the current cursor
+        # c flag will also accept the current cursor line
         blank_line = self.get_line('^\\s*$', 'bnc')
         timestamp_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d$', 'bnc')
         arrow_line = self.get_line('-->', 'bnc')

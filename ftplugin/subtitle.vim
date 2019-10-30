@@ -1,4 +1,4 @@
-let g:vimtitles_skip_amount=3
+let g:vimtitles_skip_amount=5
 let g:vimtitles_speed_shift_multiplier=1.1
 let g:vimtitles_no_subnumbers_on_save=1
 
