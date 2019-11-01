@@ -6,6 +6,6 @@ else
 	echo 'please install mpv to use vimtitles'
 fi
 
-pip3 install pynvim --quiet
+pip install pynvim --quiet
 
 nvim +UpdateRemotePlugins +qall

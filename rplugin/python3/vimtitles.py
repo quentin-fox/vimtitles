@@ -38,6 +38,8 @@ class VimtitlesPlugin(object):
     def player_open(self, args):
         if self.running:
             return
+            buffer = self.nvim.current.buffer
+            del buffer[1]
         filename = args[0]
         filetype = self.parse_filetype(filename)
         timestart = args[1] if len(args) >= 2 else '0:00'
@@ -268,8 +270,8 @@ class Player:
                    '--sub-auto=fuzzy',  # subs loaded if they fuzzy match the av filename
                    '--start=' + timestart,
                    '--pause')  # starts the video paused
-        # if av == "v":
-        #     mpvargs += ('--geometry=' + geometry,)  # geometry can be 50%x50%, for example
+        if av == "v":
+            mpvargs += ('--geometry=' + geometry,)  # geometry can be 50%x50%, for example
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
 
     def cycle_pause(self):
