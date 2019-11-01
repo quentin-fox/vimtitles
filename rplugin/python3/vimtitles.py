@@ -268,8 +268,8 @@ class Player:
                    '--sub-auto=fuzzy',  # subs loaded if they fuzzy match the av filename
                    '--start=' + timestart,
                    '--pause')  # starts the video paused
-        if av == "v":
-            mpvargs += ('--geometry=' + geometry,)  # geometry can be 50%x50%, for example
+        # if av == "v":
+        #     mpvargs += ('--geometry=' + geometry,)  # geometry can be 50%x50%, for example
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
 
     def cycle_pause(self):
