@@ -37,24 +37,21 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
         if self.running:
-            return
-
+            self.running = self.player_quit()
         buffer = self.nvim.current.buffer
-        buffer[1] = json.dumps(args)
+        buffer[0] = json.dumps(args)
         filename = args[0]
-        filetype = self.parse_filetype(filename)
-        timestart = args[1] if len(args) >= 2 else '0:00'
-        geometry = args[2] if len(args) >= 3 else '50%x50%'
-        self.player = Player(filename)
-        self.player = Player(filename)
-        self.player.play(av=filetype, timestart=timestart, geometry=geometry)
+        # filetype = self.parse_filetype(filename)
+        # timestart ='0:00'
+        # geometry = '50%x50%'
+        self.player = Player(file=filename)
+        self.player.play()
         self.running = True
 
     @pynvim.command('PlayerQuit')
     def player_quit(self):
         if self.running:
-            self.player.quit()
-            self.running = False
+            self.running = self.player.quit()
 
     @pynvim.command('PlayerCyclePause')
     def player_pause(self):
@@ -245,9 +242,9 @@ class VimtitlesPlugin(object):
 class Player:
     """class for the mpv player, has controls and can get info about the player"""
 
-    def __init__(self, file):
+    def __init__(self, filename):
         """requires an absolute path to the file?"""
-        self.file = file
+        self.filename = filename
         self.pause = True
 
     def send_command(self, command):
@@ -264,7 +261,7 @@ class Player:
     def play(self, av="v", geometry='50%x50%', timestart='0:00'):
         """initiates the player the file, depending on the filetype"""
         mpvargs = ('mpv',
-                   self.file,
+                   self.filename,
                    '--input-ipc-server=/tmp/mpvsocket',
                    '--really-quiet',  # prevents text being sent via stdout
                    '--keep-open=always'  # don't quit mpv after file has finished
@@ -318,7 +315,13 @@ class Player:
 
     def quit(self):
         """exits the mpv player"""
-        self.send_command('quit')
+        try:
+            self.send_command('quit')
+        except subprocess.CalledProcessError:
+            print("Player was not running")
+        finally:
+            return False
+
 
 
 def convert_time(input):
