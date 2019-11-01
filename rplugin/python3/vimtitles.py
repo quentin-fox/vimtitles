@@ -36,33 +36,18 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
-        if not self.running:
-            filename = args[0]
-            try:
-                timestart = args[1]
-
-            except IndexError:
-                timestart = '0:00'
-            try:
-                geometry = args[2]
-            except IndexError:
-                geometry = '50%x50%'
-            filetype = self.parse_filetype(filename)
-            self.player = Player(filename)
-            self.player.play(av=filetype, timestart=timestart, geometry=geometry)
-            self.running = True
-
-    # @pynvim.command('PlayerOpen', nargs='+', complete='file')
-    # def player_open(self, args):
-    #     if self.running:
-    #         return
-    #     filename = args[0]
-    #     filetype = self.parse_filetype(filename)
-    #     timestart = args[1] if len(args) >= 2 else '0:00'
-    #     geometry = args[2] if len(args) >= 3 else '50%x50%'
-    #     self.player = Player(filename)
-    #     self.player.play(av=filetype, timestart=timestart, geometry=geometry)
-    #     self.running = True
+        if self.running:
+            return
+            buffer = self.nvim.current.buffer
+            del buffer[1]
+        filename = args[0]
+        filetype = self.parse_filetype(filename)
+        timestart = args[1] if len(args) >= 2 else '0:00'
+        geometry = args[2] if len(args) >= 3 else '50%x50%'
+        self.player = Player(filename)
+        self.player = Player(filename)
+        self.player.play(av=filetype, timestart=timestart, geometry=geometry)
+        self.running = True
 
     @pynvim.command('PlayerQuit')
     def player_quit(self):
