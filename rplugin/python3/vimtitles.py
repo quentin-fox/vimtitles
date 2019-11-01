@@ -38,8 +38,9 @@ class VimtitlesPlugin(object):
     def player_open(self, args):
         if self.running:
             return
-            buffer = self.nvim.current.buffer
-            del buffer[1]
+
+        buffer = self.nvim.current.buffer
+        buffer[1] = json.dumps(args)
         filename = args[0]
         filetype = self.parse_filetype(filename)
         timestart = args[1] if len(args) >= 2 else '0:00'
