@@ -4,6 +4,7 @@ import subprocess
 import json
 import re
 import mimetypes
+import pathlib
 
 
 @pynvim.plugin
@@ -12,6 +13,13 @@ class VimtitlesPlugin(object):
     def __init__(self, nvim):
         self.nvim = nvim
         self.running = False
+        self.playspeed = 1
+
+    def write_err(self, err: str):
+        self.nvim.err_write(str + '\n')
+
+    def write_msg(self, msg: str):
+        self.nvim.out_write(msg + '\n')
 
     @pynvim.command('TestFunc', nargs='+', complete='file')
     def test_func(self, args):
@@ -38,20 +46,23 @@ class VimtitlesPlugin(object):
     def player_open(self, args):
         if self.running:
             self.running = self.player_quit()
-        buffer = self.nvim.current.buffer
-        buffer[0] = json.dumps(args)
         filename = args[0]
-        # filetype = self.parse_filetype(filename)
-        # timestart ='0:00'
-        # geometry = '50%x50%'
-        self.player = Player(file=filename)
-        self.player.play()
-        self.running = True
+        filepath = pathlib.Path(filename)
+        filetype = self.parse_filetype(filename)
+        timestart ='0:00'
+        geometry = '50%x50%'
+        if not filepath.exists():
+            raise Exception
+        else:
+            self.player = Player(filename=filename)
+            self.player.play(av=filetype, timestart=timestart, geometry=geometry)
+            self.running = True
 
     @pynvim.command('PlayerQuit')
     def player_quit(self):
         if self.running:
             self.running = self.player.quit()
+            self.write_msg('Quitting Player...')
 
     @pynvim.command('PlayerCyclePause')
     def player_pause(self):
@@ -150,14 +161,16 @@ class VimtitlesPlugin(object):
             self.ts_a = ts_a.replace(',', '.')
             self.ts_b = ts_b.replace(',', '.')
             self.player.loop(self.ts_a, self.ts_b)
+            self.write_msg(f"Looping between {self.ts_a} and {self.ts_b}")
 
     @pynvim.command('PlayerStopLoop')
     def player_stop_loop(self):
         if self.ts_a and self.ts_b:
             self.player.stop_loop()
             self.ts_a = self.ts_b = None
+            self.write_msg("Stopping loop")
         else:
-            return("No loop found")
+            self.write_msg("No loop found")
 
     @pynvim.command('RemoveSubNumbers')
     def remove_sub_numbers(self):
@@ -212,17 +225,24 @@ class VimtitlesPlugin(object):
     def player_inc_speed(self):
         try:
             multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
-            self.player.inc_speed(multiplier)
         except pynvim.api.nvim.NvimError:
-            self.player.inc_speed()
+            multiplier = 1.1
+        finally:
+            self.playspeed = self.playspeed * multiplier
+            self.player.inc_speed(multiplier)
+            self.write_msg(msg="Playback speed: " + format(self.playspeed, ".2f") + 'x')
+
 
     @pynvim.command('PlayerDecSpeed')
     def player_dec_speed(self):
         try:
             multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
-            self.player.dec_speed(multiplier)
         except pynvim.api.nvim.NvimError:
-            self.player.dec_speed()
+            multiplier = 1.1
+        finally:
+            self.player.dec_speed(multiplier)
+            self.playspeed = self.playspeed / multiplier
+            self.write_msg(msg="Playback speed: " + format(self.playspeed, ".2f") + 'x')
 
     def parse_ts(self, ts):
         ts1 = ts.split(' ')[0]
@@ -258,18 +278,19 @@ class Player:
         ps.wait()
         return(output)
 
-    def play(self, av="v", geometry='50%x50%', timestart='0:00'):
+    def play(self, av="v", timestart="0:00", geometry="50%x50%"):
         """initiates the player the file, depending on the filetype"""
+        # the order of mpvargs is really picky... very prone to breaking everything
         mpvargs = ('mpv',
                    self.filename,
-                   '--input-ipc-server=/tmp/mpvsocket',
-                   '--really-quiet',  # prevents text being sent via stdout
-                   '--keep-open=always'  # don't quit mpv after file has finished
-                   '--sub-auto=fuzzy',  # subs loaded if they fuzzy match the av filename
-                   '--start=' + timestart,
-                   '--pause')  # starts the video paused
+                   '--input-ipc-server=/tmp/mpvsocket')
         if av == "v":
-            mpvargs += ('--geometry=' + geometry,)  # geometry can be 50%x50%, for example
+            mpvargs += ('--geometry=' + geometry,)
+        mpvargs += ('--really-quiet',  # prevents text being sent via stdout
+                    '--sub-auto=fuzzy',  # subs loaded if they fuzzy match the av filename
+                    '--start=' + timestart,
+                    '--pause',  # don't quit mpv after file has finished
+                    '--keep-open=always')  # starts the video paused
         subprocess.Popen(mpvargs, close_fds=True, shell=False, stdout=subprocess.DEVNULL)
 
     def cycle_pause(self):

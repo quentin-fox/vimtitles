@@ -10,7 +10,7 @@ if !get(g:, 'vimtitles_no_default_key_mappings', 0)
 	nnoremap <silent> + :execute "PlayerSeekByStopTimestamp"<Cr>
 	nnoremap <silent> ;rs :execute "w <Bar> PlayerReloadSubs"<Cr>
 	nnoremap <silent> \\ :execute "FindCurrentSub"<Cr>zz
-	nnoremap <silent> [ :execute "PlayerDecSpeed"<Cr>
-	nnoremap <silent> ] :execute "PlayerIncSpeed"<Cr>
+	nnoremap <silent> [[ :execute "PlayerDecSpeed"<Cr>
+	nnoremap <silent> ]] :execute "PlayerIncSpeed"<Cr>
 endif
 
