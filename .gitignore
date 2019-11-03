@@ -3,3 +3,4 @@
 *.srt
 ideas.md
 stdout.txt
+venv/
