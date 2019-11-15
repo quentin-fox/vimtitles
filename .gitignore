@@ -4,3 +4,4 @@
 ideas.md
 stdout.txt
 venv/
+__pycache__/
