@@ -121,8 +121,7 @@ class VimtitlesPlugin(object):
     def player_seek_by_stop_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
-        # question mark should be escaped when sending to nvim
-        ts_line = self.get_line(FULL_TS_FORMAT + r'\s\?$', 'bnc')
+        ts_line = self.get_line(FULL_TS_FORMAT, 'bnc')
         ts_pair = TimestampPair(buffer[ts_line])
         self.player.seek_abs(ts_pair.ts2.seconds)
 
@@ -205,7 +204,7 @@ class VimtitlesPlugin(object):
 
         ts_list = [(line_num, TimestampPair(ts_pair))
                    for line_num, ts_pair in enumerate(buffer)
-                   if re.match(FULL_TS_FORMAT + r'\s\?$', ts_pair)]
+                   if re.match(FULL_TS_FORMAT, ts_pair)]
 
         current_time = self.player.get_time()
 
@@ -396,4 +395,10 @@ class TimestampPair:
     def __contains__(self, seconds):
         return (self.ts1.seconds <= seconds <= self.ts2.seconds)
 
+
+# for debugging purposes only
+if __name__ == '__main__':
+    from pynvim import attach
+    nvim = attach('socket', path='/tmp/nvim')
+    vt = VimtitlesPlugin(nvim)
 
