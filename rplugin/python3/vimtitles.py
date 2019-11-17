@@ -6,6 +6,9 @@ import re
 import mimetypes
 import pathlib
 
+SINGLE_TS_FORMAT = r'^\d\d:\d\d:\d\d,\d\d\d$'
+# leaving off '\s\?' and '$', not always needed
+FULL_TS_FORMAT = r'^\d\d:\d\d:\d\d,\d\d\d --> \d\d:\d\d:\d\d,\d\d\d'
 
 @pynvim.plugin
 class VimtitlesPlugin(object):
@@ -49,7 +52,7 @@ class VimtitlesPlugin(object):
         filename = args[0]
         filepath = pathlib.Path(filename)
         filetype = self.parse_filetype(filename)
-        timestart ='0:00'
+        timestart = '0:00'
         geometry = '50%x50%'
         if not filepath.exists():
             raise Exception
@@ -70,22 +73,20 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('SetTimestamp')
     def set_timestamp(self):
-        time = self.player.get_time()
+        ts = Timestamp(self.player.get_time())
         buffer = self.nvim.current.buffer
+
         # c flag will also accept the current cursor line
         blank_line = self.get_line('^\\s*$', 'bnc')
-        timestamp_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d$', 'bnc')
+        timestamp_line = self.get_line(SINGLE_TS_FORMAT, 'bnc')
         arrow_line = self.get_line('-->', 'bnc')
         if blank_line > timestamp_line and blank_line > arrow_line:
-            time_srt = convert_time(time)
-            buffer[blank_line] = time_srt
+            buffer[blank_line] = str(ts)
         elif timestamp_line > blank_line:
             # abort if there's a second timestamp
-            old_time = buffer[timestamp_line]
-            old_time = old_time.rstrip()
-            time_srt = convert_time(time)
-            full_time = old_time + " --> " + time_srt
-            buffer[timestamp_line] = full_time
+            old_ts = buffer[timestamp_line]
+            ts_pair = TimestampPair(old_ts + ' --> ' + str(ts))
+            buffer[timestamp_line] = str(ts_pair)
 
     def get_line(self, pattern, flags):
         row, col = self.nvim.funcs.searchpos(pattern, flags)
@@ -111,22 +112,19 @@ class VimtitlesPlugin(object):
     def player_seek_by_start_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
-        ts_line = self.get_line('^\\d\\d:\\d\\d:\\d\\d', 'bnc')
-        start_ts = buffer[ts_line].split(' ')[0]  # will work even if no spaces in line
-        time_float = convert_time(start_ts)
-        self.player.seek_abs(time_float)
+        ts_line = self.get_line(SINGLE_TS_FORMAT[:-1], 'bnc')  # don't want EOL regex $
+        start_ts_str = buffer[ts_line].split(' ')[0]
+        start_ts = Timestamp.from_string(start_ts_str)
+        self.player.seek_abs(start_ts.seconds)
 
     @pynvim.command('PlayerSeekByStopTimestamp')
     def player_seek_by_stop_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
-        # note that the '?' has to be escaped when sending regex to vim
-        # doesn't have to be escaped in python, though
-        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s\\?$'
-        ts_line = self.get_line(tsformat, 'bnc')
-        stop_ts = buffer[ts_line].split(' ')[2]  # will work even if no spaces in line
-        time_float = convert_time(stop_ts)
-        self.player.seek_abs(time_float)
+        # question mark should be escaped when sending to nvim
+        ts_line = self.get_line(FULL_TS_FORMAT + r'\s\?$', 'bnc')
+        ts_pair = TimestampPair(buffer[ts_line])
+        self.player.seek_abs(ts_pair.ts2.seconds)
 
     @pynvim.command('PlayerSeekAbs', nargs=1)
     def player_seek_abs(self, args):
@@ -152,23 +150,21 @@ class VimtitlesPlugin(object):
     @pynvim.command('PlayerLoop')
     def player_loop(self):
         buffer = self.nvim.current.buffer
-        ts_line = self.get_line('-->', 'bnc')
+        ts_line = self.get_line(FULL_TS_FORMAT, 'bnc')
         blank_line = self.get_line('^\\s*$', 'bn')
         if blank_line > ts_line:
             return
         elif ts_line > blank_line:
-            ts_a, _, ts_b = buffer[ts_line].split(' ')
-            self.ts_a = ts_a.replace(',', '.')
-            self.ts_b = ts_b.replace(',', '.')
-            self.player.loop(self.ts_a, self.ts_b)
+            self.ts_loop = TimestampPair(buffer[ts_line])
+            self.player.loop(self.ts_loop.ts1.seconds, self.ts_loop.ts2.seconds)
             self.write_msg(f"Looping between {self.ts_a} and {self.ts_b}")
 
     @pynvim.command('PlayerStopLoop')
     def player_stop_loop(self):
-        if self.ts_a and self.ts_b:
+        if self.ts_loop:
             self.player.stop_loop()
-            self.ts_a = self.ts_b = None
             self.write_msg("Stopping loop")
+            del self.ts_loop
         else:
             self.write_msg("No loop found")
 
@@ -203,23 +199,33 @@ class VimtitlesPlugin(object):
 
     @pynvim.command('FindCurrentSub')
     def find_current_sub(self):
+
         buffer = self.nvim.current.buffer
-        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
-        ts_list = [(i, self.parse_ts(x)) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
-        current_time = self.player.get_time()
-        cursor_pos = [(i + 2, 0) for i, x in ts_list if x <= current_time][-1]
         window = self.nvim.current.window
+
+        ts_list = [(line_num, TimestampPair(ts_pair))
+                   for line_num, ts_pair in enumerate(buffer)
+                   if re.match(FULL_TS_FORMAT + r'\s\?$', ts_pair)]
+
+        current_time = self.player.get_time()
+
+        cursor_pos = next((line_num + 2, 0)
+                          for line_num, ts_pair in ts_list
+                          if current_time in ts_pair)
+
         window.cursor = (cursor_pos)
 
     @pynvim.command('ShiftSubs', nargs=1)
     def shift_subs(self, args):
-        shift = float(args[0])
         buffer = self.nvim.current.buffer
-        tsformat = '^\\d\\d:\\d\\d:\\d\\d,\\d\\d\\d --> \\d\\d:\\d\\d:\\d\\d,\\d\\d\\d\\s?$'
-        ts_list = [(i, x.split(' ')[0], x.split(' ')[2]) for i, x in enumerate(buffer) if bool(re.match(tsformat, x))]
-        ts_shift = [(i, self.shift_ts(x, shift), self.shift_ts(y, shift)) for i, x, y in ts_list]
-        for i, ts1, ts2 in ts_shift:
-            buffer[i] = ts1 + ' --> ' + ts2
+        shift_amount = float(args[0])
+
+        ts_list = [(line_num, TimestampPair(ts_pair))
+                   for line_num, ts_pair in enumerate(buffer)
+                   if re.match(FULL_TS_FORMAT + r'\s\?$', ts_pair)]
+
+        for line_num, ts in ts_list:
+            buffer[line_num] = str(ts.shift(shift_amount))
 
     @pynvim.command('PlayerIncSpeed')
     def player_inc_speed(self):
@@ -232,7 +238,6 @@ class VimtitlesPlugin(object):
             self.player.inc_speed(multiplier)
             self.write_msg(msg="Playback speed: " + format(self.playspeed, ".2f") + 'x')
 
-
     @pynvim.command('PlayerDecSpeed')
     def player_dec_speed(self):
         try:
@@ -243,20 +248,6 @@ class VimtitlesPlugin(object):
             self.player.dec_speed(multiplier)
             self.playspeed = self.playspeed / multiplier
             self.write_msg(msg="Playback speed: " + format(self.playspeed, ".2f") + 'x')
-
-    def parse_ts(self, ts):
-        ts1 = ts.split(' ')[0]
-        ts_float = convert_time(ts1)
-        return(ts_float)
-
-    def shift_ts(self, ts, shift):
-        ts_float = convert_time(ts)
-        new_ts = ts_float + shift
-        if new_ts <= 0:
-            return('00:00:00,000')
-        else:
-            new_ts_str = convert_time(float(new_ts))
-            return(new_ts_str)
 
 
 class Player:
@@ -344,27 +335,65 @@ class Player:
             return False
 
 
+class Timestamp:
+    def __init__(self, seconds):
+        self.seconds = seconds
 
-def convert_time(input):
-    """method for converting .srt time strings to number of seconds"""
-    if isinstance(input, float) or isinstance(input, int):
-        if input == 0:
-            return('00:00:00,000')
+    @classmethod
+    def from_string(cls, ts_string):
+        """initialize Timestamp class using string representation"""
+        if not re.match(SINGLE_TS_FORMAT, ts_string):
+            raise Exception(f'{ts_string} is not a valid srt timestamp.')
+
+        # easily split all components by same character
+        ts_string = ts_string.replace(',', ':')
+        h, m, s, ms = ts_string.split(':')
+        s_final = (int(h) * 3600) + (int(m) * 60) + (int(s)) + (int(ms) / 1000)
+        return cls(float(s_final))
+
+    def __str__(self):
+        if self.seconds == 0:
+            return '00:00:00,000'
         else:
-            time = str(datetime.timedelta(seconds=input))
-            time = time.replace(".", ",")  # second to milisecond separator is a comma in .srt
-            if len(time) in (6, 7):
-                time = time + ',000000'  # sometimes the microseconds are not added
-            time = time[:-3]  # converts from microseconds to miliseconds
-            time = time.rjust(12, '0')  # will add extra zero if hours are missing them
-            return(time)
-    elif isinstance(input, str):
-        time = input
-        if time == '00:00:00,000':
-            return(float(0))
+            ts = str(datetime.timedelta(seconds=self.seconds))
+            ts = ts.replace('.', ',')
+            if len(ts) in (6, 7):  # sometimes mili/microseconds are left out
+                ts = ts + ',000000'
+            ts = ts[:-3]  # remove microseconds
+            ts = ts.rjust(12, '0')  # pads zero for hours
+            assert re.match(SINGLE_TS_FORMAT, ts)
+            return ts
+
+    def shift(self, seconds):
+        newseconds = self.seconds + seconds
+        if newseconds <= 0:
+            self.seconds = 0
         else:
-            time_struct = datetime.datetime.strptime(input, "%H:%M:%S,%f")
-            td = time_struct - datetime.datetime(1900, 1, 1)
-            time_float = float(td.total_seconds())
-            return(time_float)
+            self.seconds = newseconds
+        return
+
+
+class TimestampPair:
+
+    def __init__(self, ts_pair: str):
+        ts_pair.rstrip()
+        if not re.match(FULL_TS_FORMAT, ts_pair):
+            raise Exception(f'{ts_pair} is not a valid srt timestamp.')
+        self.ts_pair = ts_pair
+        ts1, _, ts2 = ts_pair.split(' ')
+        self.ts1 = Timestamp.from_string(ts1)
+        self.ts2 = Timestamp.from_string(ts2)
+
+    def shift(self, seconds):
+        self.ts1.shift(seconds)
+        self.ts2.shift(seconds)
+        return self  # allows chaining with to_string
+
+    def __str__(self):
+        ts_pair = str(self.ts1) + ' --> ' + str(self.ts2)
+        return ts_pair
+
+    def __contains__(self, seconds):
+        return (self.ts1.seconds <= seconds <= self.ts2.seconds)
+
 
