@@ -221,7 +221,7 @@ class VimtitlesPlugin(object):
 
         ts_list = [(line_num, TimestampPair(ts_pair))
                    for line_num, ts_pair in enumerate(buffer)
-                   if re.match(FULL_TS_FORMAT + r'\s\?$', ts_pair)]
+                   if re.match(FULL_TS_FORMAT, ts_pair)]
 
         for line_num, ts in ts_list:
             buffer[line_num] = str(ts.shift(shift_amount))
