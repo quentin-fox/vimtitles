@@ -5,6 +5,7 @@ import json
 import re
 import mimetypes
 import pathlib
+import time
 
 SINGLE_TS_FORMAT = r'^\d\d:\d\d:\d\d,\d\d\d$'
 # leaving off '\s\?' and '$', not always needed
@@ -36,32 +37,54 @@ class VimtitlesPlugin(object):
     def parse_filetype(self, filename):
         mime_guess = mimetypes.guess_type(filename)[0]
         if mime_guess is None:
-            raise Exception(f'{filename} is not a known audio or video type')
+            raise ValueError(f'{filename} is not a known audio or video type')
             return
         if "audio" in mime_guess:
             return("a")
         elif "video" in mime_guess:
             return("v")
         else:
-            raise OSError(f'{mime_guess} is not a known audio or video type')
+            raise ValueError(f'{mime_guess} is not a known audio or video type')
+
+    def user_prompt(self, prompt: str) -> str:
+        self.nvim.command('call inputsave()')
+        self.nvim.command("let user_input = input('" + prompt + "')")
+        self.nvim.command('call inputrestore()')
+        return self.nvim.eval('user_input')
 
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
         if self.running:
             self.running = self.player_quit()
+
         filename = args[0]
-        try:
-            filetype = self.parse_filetype(filename)
-        except OSError as err:
-            self.write_err(str(err))
-        timestart = '0:00'
-        geometry = '50%x50%'
+        timestart = args[1] if len(args) > 1 else '0:00'
+        geometry = args[2] if len(args) > 2 else '50%x50%'
+
         try:
             self.player = Player(filename=filename)
         except FileNotFoundError as err:
             self.write_err(str(err))
+
+        try:
+            filetype = self.parse_filetype(filename)
+        except ValueError as err:
+            msg = str(err) + '. Open anyways as a/v? (Enter to cancel.) '
+            output = self.user_prompt(msg)
+            if output.lower() not in {'a', 'v'}:
+                return
+            else:
+                filetype = output.lower()
+
+        self.player.play(av=filetype, timestart=timestart, geometry=geometry)
+
+        # just used to see if the player opened - won't have any effects
+        time.sleep(0.50)
+        if self.player.test_open() != 1:
+            msg = f'mpv encountered an error opening {filename}'
+            self.write_err(msg)
+            self.running = False
         else:
-            self.player.play(av=filetype, timestart=timestart, geometry=geometry)
             self.running = True
 
     @pynvim.command('PlayerQuit')
@@ -274,6 +297,15 @@ class Player:
         output = subprocess.check_output(('socat', '-', '/tmp/mpvsocket'), stdin=ps.stdout)
         ps.wait()
         return(output)
+
+    def test_open(self):
+        test_dict = {"command": "client_name"}
+        try:
+            test_status = self.send_command(test_dict)
+        except subprocess.CalledProcessError:
+            return 0
+        else:
+            return 1
 
     def play(self, av="v", timestart="0:00", geometry="50%x50%"):
         """initiates the player the file, depending on the filetype"""
