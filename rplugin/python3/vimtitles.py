@@ -19,7 +19,7 @@ class VimtitlesPlugin(object):
         self.playspeed = 1
 
     def write_err(self, err: str):
-        self.nvim.err_write(str + '\n')
+        self.nvim.err_write(err + '\n')
 
     def write_msg(self, msg: str):
         self.nvim.out_write(msg + '\n')
@@ -43,21 +43,24 @@ class VimtitlesPlugin(object):
         elif "video" in mime_guess:
             return("v")
         else:
-            raise Exception(f'{mime_guess} is not a known audio or video type')
+            raise OSError(f'{mime_guess} is not a known audio or video type')
 
     @pynvim.command('PlayerOpen', nargs='+', complete='file')
     def player_open(self, args):
         if self.running:
             self.running = self.player_quit()
         filename = args[0]
-        filepath = pathlib.Path(filename)
-        filetype = self.parse_filetype(filename)
+        try:
+            filetype = self.parse_filetype(filename)
+        except OSError as err:
+            self.write_err(str(err))
         timestart = '0:00'
         geometry = '50%x50%'
-        if not filepath.exists():
-            raise Exception
-        else:
+        try:
             self.player = Player(filename=filename)
+        except FileNotFoundError as err:
+            self.write_err(str(err))
+        else:
             self.player.play(av=filetype, timestart=timestart, geometry=geometry)
             self.running = True
 
@@ -254,8 +257,12 @@ class Player:
 
     def __init__(self, filename):
         """requires an absolute path to the file?"""
-        self.filename = filename
-        self.pause = True
+        file = pathlib.Path(filename)
+        if file.exists():
+            self.file = file
+            self.pause = True
+        else:
+            raise FileNotFoundError(f'{filename} could not be found')
 
     def send_command(self, command):
         """generic method for sending a command to the player"""
@@ -272,7 +279,7 @@ class Player:
         """initiates the player the file, depending on the filetype"""
         # the order of mpvargs is really picky... very prone to breaking everything
         mpvargs = ('mpv',
-                   self.filename,
+                   str(self.file),
                    '--input-ipc-server=/tmp/mpvsocket')
         if av == "v":
             mpvargs += ('--geometry=' + geometry,)
@@ -336,6 +343,8 @@ class Player:
 
 class Timestamp:
     def __init__(self, seconds):
+        if seconds < 0:
+            raise Exception('Number of seconds in timestamp must be greater than zero')
         self.seconds = seconds
 
     @classmethod
@@ -347,6 +356,10 @@ class Timestamp:
         # easily split all components by same character
         ts_string = ts_string.replace(',', ':')
         h, m, s, ms = ts_string.split(':')
+        if int(m) >= 60:
+            raise Exception('Minutes cannot be greater than 59')
+        if int(s) >= 60:
+            raise Exception('Seconds cannot be greater than 59')
         s_final = (int(h) * 3600) + (int(m) * 60) + (int(s)) + (int(ms) / 1000)
         return cls(float(s_final))
 
@@ -369,19 +382,23 @@ class Timestamp:
             self.seconds = 0
         else:
             self.seconds = newseconds
-        return
 
 
 class TimestampPair:
 
     def __init__(self, ts_pair: str):
         ts_pair.rstrip()
-        if not re.match(FULL_TS_FORMAT, ts_pair):
-            raise Exception(f'{ts_pair} is not a valid srt timestamp.')
+        if not re.match(FULL_TS_FORMAT + r'\w?$', ts_pair):
+            raise Exception(f'{ts_pair} is not a valid srt timestamp')
         self.ts_pair = ts_pair
         ts1, _, ts2 = ts_pair.split(' ')
-        self.ts1 = Timestamp.from_string(ts1)
-        self.ts2 = Timestamp.from_string(ts2)
+        try:
+            self.ts1 = Timestamp.from_string(ts1)
+            self.ts2 = Timestamp.from_string(ts2)
+        except Exception:
+            raise Exception(f'{ts_pair} is not a valid srt timestamp')
+        if self.ts1.seconds > self.ts2.seconds:
+            raise Exception('First timestamp must come before second timestamp')
 
     def shift(self, seconds):
         self.ts1.shift(seconds)
