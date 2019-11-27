@@ -234,11 +234,15 @@ class VimtitlesPlugin(object):
 
         current_time = self.player.get_time()
 
-        cursor_pos = next((line_num + 2, 0)
+        cursor_pos_gen = ((line_num + 2, 0)
                           for line_num, ts_pair in ts_list
                           if current_time in ts_pair)
-
-        window.cursor = (cursor_pos)
+        try:
+            cursor_pos = next(cursor_pos_gen)
+        except StopIteration:  # no current sub
+            self.write_msg("No subtitle found for current timepoint.")
+        else:
+            window.cursor = (cursor_pos)
 
     @pynvim.command('ShiftSubs', nargs=1)
     def shift_subs(self, args):
