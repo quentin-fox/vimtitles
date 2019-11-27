@@ -243,6 +243,7 @@ class VimtitlesPlugin(object):
             self.write_msg("No subtitle found for current timepoint.")
         else:
             window.cursor = (cursor_pos)
+            self.nvim.feedkeys('zz')
 
     @pynvim.command('ShiftSubs', nargs=1)
     def shift_subs(self, args):
