@@ -12,6 +12,7 @@ SINGLE_TS_FORMAT = r'^\d\d:\d\d:\d\d,\d\d\d$'
 # leaving off '\s\?' and '$', not always needed
 FULL_TS_FORMAT = r'^\d\d:\d\d:\d\d,\d\d\d --> \d\d:\d\d:\d\d,\d\d\d'
 
+
 @pynvim.plugin
 class VimtitlesPlugin(object):
 
@@ -21,7 +22,7 @@ class VimtitlesPlugin(object):
         self.playspeed = 1
         self.player = None
 
-    def req_player_running(func):
+    def requires_player(func):
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             if not self.player or not self.running:
@@ -90,19 +91,19 @@ class VimtitlesPlugin(object):
             self.running = True
 
     @pynvim.command('PlayerQuit')
-    @req_player_running
+    @requires_player
     def player_quit(self):
         if self.running:
             self.running = self.player.quit()
             self.write_msg('Quitting Player...')
 
     @pynvim.command('PlayerCyclePause')
-    @req_player_running
+    @requires_player
     def player_pause(self):
         self.player.cycle_pause()
 
     @pynvim.command('SetTimestamp')
-    @req_player_running
+    @requires_player
     def set_timestamp(self):
         ts = Timestamp(self.player.get_time())
         buffer = self.nvim.current.buffer
@@ -124,7 +125,7 @@ class VimtitlesPlugin(object):
         return(row - 1)
 
     @pynvim.command('PlayerSeekForward')
-    @req_player_running
+    @requires_player
     def player_seek_forward(self):
         try:
             seconds = float(self.nvim.eval('g:vimtitles_skip_amount'))
@@ -133,7 +134,7 @@ class VimtitlesPlugin(object):
         self.player.seek(seconds)
 
     @pynvim.command('PlayerSeekBackward')
-    @req_player_running
+    @requires_player
     def player_seek_backward(self):
         try:
             seconds = float(self.nvim.eval('g:vimtitles_skip_amount')) * -1
@@ -142,7 +143,7 @@ class VimtitlesPlugin(object):
         self.player.seek(seconds)
 
     @pynvim.command('PlayerSeekByStartTimestamp')
-    @req_player_running
+    @requires_player
     def player_seek_by_start_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
@@ -152,7 +153,7 @@ class VimtitlesPlugin(object):
         self.player.seek_abs(start_ts.seconds)
 
     @pynvim.command('PlayerSeekByStopTimestamp')
-    @req_player_running
+    @requires_player
     def player_seek_by_stop_ts(self):
         """will seek to the timestamp at the beginning of the most recent line"""
         buffer = self.nvim.current.buffer
@@ -161,7 +162,7 @@ class VimtitlesPlugin(object):
         self.player.seek_abs(ts_pair.ts2.seconds)
 
     @pynvim.command('PlayerSeekAbs', nargs=1)
-    @req_player_running
+    @requires_player
     def player_seek_abs(self, args):
         time_input = args[0]
         try:
@@ -183,7 +184,7 @@ class VimtitlesPlugin(object):
             self.player.seek_abs(time_float)
 
     @pynvim.command('PlayerLoop')
-    @req_player_running
+    @requires_player
     def player_loop(self):
         buffer = self.nvim.current.buffer
         ts_line = self.get_line(FULL_TS_FORMAT, 'bnc')
@@ -196,7 +197,7 @@ class VimtitlesPlugin(object):
             self.write_msg(f"Looping between {self.ts_a} and {self.ts_b}")
 
     @pynvim.command('PlayerStopLoop')
-    @req_player_running
+    @requires_player
     def player_stop_loop(self):
         if self.ts_loop:
             self.player.stop_loop()
@@ -231,12 +232,12 @@ class VimtitlesPlugin(object):
             buffer[x:x] = [str(i)]
 
     @pynvim.command('PlayerReloadSubs')
-    @req_player_running
+    @requires_player
     def player_reload_subs(self):
         self.player.send_command('sub-reload')
 
     @pynvim.command('FindCurrentSub')
-    @req_player_running
+    @requires_player
     def find_current_sub(self):
 
         buffer = self.nvim.current.buffer
@@ -272,7 +273,7 @@ class VimtitlesPlugin(object):
             buffer[line_num] = str(ts.shift(shift_amount))
 
     @pynvim.command('PlayerIncSpeed')
-    @req_player_running
+    @requires_player
     def player_inc_speed(self):
         try:
             multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
@@ -284,7 +285,7 @@ class VimtitlesPlugin(object):
             self.write_msg(msg="Playback speed: " + format(self.playspeed, ".2f") + 'x')
 
     @pynvim.command('PlayerDecSpeed')
-    @req_player_running
+    @requires_player
     def player_dec_speed(self):
         try:
             multiplier = float(self.nvim.eval('g:vimtitles_speed_shift_multiplier'))
