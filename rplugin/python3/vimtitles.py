@@ -28,7 +28,7 @@ class VimtitlesPlugin(object):
             if not self.player or not self.running:
                 self.write_err("Player must be running")
             else:
-                func(*args, **kwargs)
+                func(self, *args, **kwargs)
         return wrapper
 
     def write_err(self, err: str):
